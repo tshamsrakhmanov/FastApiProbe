@@ -5,7 +5,7 @@ from datetime import datetime
 
 # config data can be described in separate file
 config = {
-    'bootstrap.servers': '0.0.0.0:9090',
+    'bootstrap.servers': 'localhost:9090',
     'group.id': 'group1',
     'auto.offset.reset': 'earliest',
 }
