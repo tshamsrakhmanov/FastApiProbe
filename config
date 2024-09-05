@@ -1,0 +1,3 @@
+bootstrap.servers =  'kafka2:9091'
+group.id = 'group1'
+auto.offset.reset = 'earliest'

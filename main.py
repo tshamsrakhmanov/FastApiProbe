@@ -3,13 +3,6 @@ from pydantic import BaseModel
 from confluent_kafka import Producer, Consumer, KafkaException
 from datetime import datetime
 
-# config data can be described in separate file
-config = {
-    'bootstrap.servers': 'localhost:9090',
-    'group.id': 'group1',
-    'auto.offset.reset': 'earliest',
-}
-
 #
 # class Item(BaseModel):
 #     name: str
@@ -17,26 +10,43 @@ config = {
 #     brand: str = None
 
 
-producer = Producer(config)
-consumer = Consumer(config)
-consumer.subscribe(['test_topic_name'])
-
 app = FastAPI()
 
 
-def send_message(topic, message):
-    producer.produce(topic, value=message)
-    producer.flush()
+@app.get("/about")
+async def about():
+    return {"Message": "Welcome to FastAPI Stub v 0.01"}
 
 
-@app.get("/get-1")
+@app.get("/to-kafka-datetime")
 async def get_one():
-    send_message('test_topic_name', f'[INTO]{datetime.now()}')
+    config = {
+        'bootstrap.servers': 'localhost:9092',
+        'group.id': 'mygroup',
+        'auto.offset.reset': 'earliest'
+    }
+
+    producer = Producer(config)
+
+    def send_message(topic, message):
+        producer.produce(topic, value=message)
+        producer.flush()
+
+    send_message('test1', f'[INTO]{datetime.now()}')
     return {"Status": "Success"}
 
 
-@app.get("/get-2")
+@app.get("/from-kafka")
 async def get_one():
+    config = {
+        'bootstrap.servers': 'localhost:9092',  # Список серверов Kafka
+        'group.id': 'mygroup',  # Идентификатор группы потребителей
+        'auto.offset.reset': 'earliest'  # Начальная точка чтения ('earliest' или 'latest')
+    }
+
+    consumer = Consumer(config)
+    consumer.subscribe(['test1'])
+
     temp_data = {}
     try:
         while True:
