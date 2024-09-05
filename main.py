@@ -32,6 +32,7 @@ def send_message(topic, message):
 @app.get("/get-1")
 async def get_one():
     send_message('test_topic_name', f'[INTO]{datetime.now()}')
+    return {"Status": "Success"}
 
 
 @app.get("/get-2")
