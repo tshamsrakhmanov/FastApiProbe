@@ -18,11 +18,17 @@ def make_fastapi_application(broker_socket):
     # handler to send message to kafka
     @app.post("/to-kafka-datetime")
     async def get_one(message: str):
+        print(f'[INFO] Message recieved:', message)
+
         config = {'bootstrap.servers': f'{kafka_broker_socket}'}
         producer = Producer(config)
-
         producer.produce('test1', value=f'<<<{datetime.now()}>>>, {message}')
-        producer.flush()
+
+        try:
+            producer.flush(timeout=1.0)
+            print('[INFO] Message sent to kafka: ', message)
+        except KafkaException as e:
+            print(f'[ERROR] Error occured: {e.__class__}, {e.__class__.__name__}')
 
     # return app with all handlers to run it in uvicorn server
     return app
