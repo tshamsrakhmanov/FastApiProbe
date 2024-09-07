@@ -21,7 +21,7 @@ def make_fastapi_application(broker_socket):
         config = {'bootstrap.servers': f'{kafka_broker_socket}'}
         producer = Producer(config)
 
-        producer.produce('test1', value=f'[INTO]{datetime.now()}, {message}')
+        producer.produce('test1', value=f'<<<{datetime.now()}>>>, {message}')
         producer.flush()
 
     # return app with all handlers to run it in uvicorn server
