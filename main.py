@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from confluent_kafka import Producer, Consumer, KafkaError, KafkaException
+from confluent_kafka import Producer, Consumer
 from datetime import datetime
 from argparse import ArgumentParser
 from time import sleep
@@ -60,6 +60,9 @@ def make_fastapi_application(broker_socket, broker_timeout) -> FastAPI:
 
         sleep(float(broker_timeout))
         msg = consumer.poll(timeout=0.1)
+
+        # TODO resolve issue: when kafka is down, retrieve messages gives back *None* message state down below.
+        #  This behavior must be changed to raise an exception or returning 400 code back.
 
         if msg is None:
             # TODO change to logging system
