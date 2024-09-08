@@ -1,44 +1,53 @@
 from fastapi import FastAPI, HTTPException
-from confluent_kafka import Producer, Consumer, KafkaException
+from confluent_kafka import Producer, Consumer, KafkaError, KafkaException
 from datetime import datetime
 from argparse import ArgumentParser
-import logging
+from time import sleep
 
 
-def make_fastapi_application(broker_socket) -> FastAPI:
+def make_fastapi_application(broker_socket, broker_timeout) -> FastAPI:
     # create instance of an app
-    app = FastAPI()
+    application = FastAPI()
 
     # function of callback an error, must be included in CONFIG down below
     def error_cb(err):
         # TODO change to logging system
-        print('[ERROR] Callback error:', err)
+        print('[STUB Logger] [ERROR] Callback error:', err)
 
     config_producer = {'bootstrap.servers': f'{broker_socket}',
                        'error_cb': error_cb,
                        'message.timeout.ms': 10
                        }
+
+    config_consumer = {'bootstrap.servers': f'{broker_socket}',
+                       'group.id': 'foo',
+                       'auto.offset.reset': 'smallest'}
+
     producer = Producer(config_producer)
 
+    consumer = Consumer(config_consumer)
+
+    consumer.subscribe(["test1"])
+
     # simple get handle
-    @app.get("/about")
+    @application.get("/about")
     async def about():
-        return {"Message": "Welcome to FastAPI Stub v 0.01"}
+        return {"Message": "Welcome to FastAPI Stub v 0.9"}
 
     # handler to send message to kafka
-    @app.post("/to-kafka-datetime")
-    async def get_one(message: str):
+    @application.post("/to-kafka")
+    async def to_kafka(message: str):
 
         def delivery_report(err, msg):
-            """ Called once for each message produced to indicate delivery result.
-                Triggered by poll() or flush(). """
+            # Called once for each message produced to indicate delivery result.
+            # Triggered by poll() or flush()
             if err is not None:
                 # TODO change to logging system
-                print('[ERROR] Delivery report error: {}'.format(err))
+                print('[STUB Logger] [ERROR] Delivery report error: {}'.format(err))
                 raise HTTPException(500, f"{err}")
             else:
                 # TODO change to logging system
-                print('[SUCCESS] Delivery report: {} [{}]'.format(msg.topic(), msg.partition()))
+                print('[STUB Logger] [INFO ] Delivery report: {} [{}]'.format(msg.topic(), msg.partition()))
 
         producer.produce('test1', value=f'<<<{datetime.now()}>>>, {message}', callback=delivery_report)
 
@@ -46,10 +55,26 @@ def make_fastapi_application(broker_socket) -> FastAPI:
         # if a callback will contain some errors - they will be handled inside delivery report
         producer.flush(timeout=1.0)
 
+    @application.get("/from-kafka")
+    async def from_kafka():
 
-    # TODO add get from KAFKA handle
-    # return app with all handlers to run it in uvicorn server
-    return app
+        sleep(float(broker_timeout))
+        msg = consumer.poll(timeout=0.1)
+
+        if msg is None:
+            # TODO change to logging system
+            print('[STUB Logger] [INFO ] No new messages in Kafka')
+            raise HTTPException(status_code=404, detail="No new messages")
+        if msg.error():
+            # TODO change to logging system
+            print('[STUB Logger] [ERROR] Error on: {}'.format(msg.error().str()))
+            raise HTTPException(status_code=404, detail="Error occurred")
+
+        # TODO change to logging system
+        print('[STUB Logger] [INFO ] Retrieved message from kafaka: {}'.format(msg.value().decode('utf-8')))
+        return {"message": msg.value().decode('utf-8')}
+
+    return application
 
 
 if __name__ == '__main__':
@@ -57,9 +82,12 @@ if __name__ == '__main__':
 
     parser.add_argument('--broker-socket', type=str, required=True,
                         help='NAME:PORT of reired kafka in cluster. Name - are ')
+    parser.add_argument('--broker-timeout', type=str, required=True,
+                        help='time in seconds to wait before message acquisition')
+
     args = parser.parse_args()
 
-    app = make_fastapi_application(args.broker_socket)
+    app = make_fastapi_application(args.broker_socket, args.broker_timeout)
 
     import uvicorn
 
