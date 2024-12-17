@@ -84,9 +84,3 @@ services:
         condition: service_started
       kafka4:
         condition: service_started
-
-    networks:
-      - dockerized_network
-    hostname: backend
-
-
