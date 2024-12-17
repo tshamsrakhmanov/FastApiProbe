@@ -6,6 +6,8 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    networks:
+      - internal_network
   kafka1:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -22,6 +24,9 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 4
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL_LISTENER
+    networks:
+      - internal_network
+#    command: sh -c "((sleep 15 && kafka-topics --create --zookeeper zookeeper:2181 --replication-factor 4 --partitions 4 --topic test1)&) && /etc/confluent/docker/run ">
   kafka2:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -38,6 +43,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 4
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL_LISTENER
+    networks:
+      - internal_network
   kafka3:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -54,6 +61,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 4
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL_LISTENER
+    networks:
+      - internal_network
   kafka4:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -70,9 +79,13 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 4
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL_LISTENER
+    networks:
+      - internal_network
   fastapi:
     build:
       dockerfile: ./fastapi/Dockerfile
+    ports:
+      - "1234:1234"
     depends_on:
       zookeeper:
         condition: service_started
@@ -84,3 +97,10 @@ services:
         condition: service_started
       kafka4:
         condition: service_started
+    hostname:
+      fastapi
+    networks:
+      - internal_network
+
+networks:
+  internal_network:

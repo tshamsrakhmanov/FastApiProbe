@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from confluent_kafka import Producer, Consumer
+from confluent_kafka import Producer, Consumer, OFFSET_END
 from datetime import datetime
-from argparse import ArgumentParser
 from time import sleep
 import logging
 from logging import FileHandler
@@ -44,9 +43,16 @@ def make_fastapi_application(broker_socket, broker_timeout, topic_name) -> FastA
 
     config_consumer = {'bootstrap.servers': f'{broker_socket}',
                        'group.id': 'group1',
-                       'auto.offset.reset': 'latest'}
+                       "enable.auto.commit": False,
+                       "session.timeout.ms": 6000,
+                       'auto.offset.reset': 'earliest'}
 
-    # initialize new consumer with each GET request
+    # initialize new consumer
+
+    # give time to kafka to initialize (in docker container in neighbourhood)
+    sleep(5)
+
+    # init of consumer
     consumer = Consumer(config_consumer)
     consumer.subscribe([topic_name])
 
@@ -75,11 +81,13 @@ def make_fastapi_application(broker_socket, broker_timeout, topic_name) -> FastA
         # if a callback will contain some errors - they will be handled inside delivery report
         producer.flush(timeout=1.0)
 
+        return {"Result": f"Message '{message}' delivered"}
+
     @application.get("/from-kafka")
     async def from_kafka():
 
-        sleep(broker_timeout)
-        message_from_kafka = consumer.poll(timeout=0.1)
+        sleep(float(broker_timeout))
+        message_from_kafka = consumer.poll(timeout=1.5)
 
         # noinspection PyArgumentList
         if message_from_kafka is None:
@@ -88,26 +96,16 @@ def make_fastapi_application(broker_socket, broker_timeout, topic_name) -> FastA
                                 detail='Kafka internal error: broker down OR topic not valid OR no new messages in topic')
         else:
             transmit_data = message_from_kafka.value()
-            logging.info(f'Message fetched and returned:{transmit_data}')
-            return transmit_data
+            logging.info(f'Message fetched:{transmit_data}')
+            return {"Result": f"Message received '{transmit_data}'"}
+
 
     return application
 
 
 if __name__ == '__main__':
-    parser = ArgumentParser()
-
-    parser.add_argument('-s', type=str, required=False, default='localhost:9094',
-                        help='Socket of a desired KAFKA. Input as <ip address>:<port>. Default value: "localhost:9094"')
-    parser.add_argument('-t', type=float, required=False, default=0.5,
-                        help='Time in seconds to wait before message acquisition by GET handler. Default value:"0.5". Input in float.')
-    parser.add_argument('-tp', type=str, required=False, default='test1',
-                        help='Topic name to which write and read. Default: "test1"')
-
-    args = parser.parse_args()
-
-    app = make_fastapi_application(args.s, args.t, args.tp)
+    app = make_fastapi_application("kafka1:9090", "2", "test1")
 
     import uvicorn
 
-    uvicorn.run(app, host='0.0.0.0', port=8888)
+    uvicorn.run(app, host='0.0.0.0', port=1234)
