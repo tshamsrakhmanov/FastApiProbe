@@ -99,6 +99,7 @@ def make_fastapi_application(broker_socket, broker_timeout, topic_name) -> FastA
             logging.info(f'Message fetched:{transmit_data}')
             return {"Result": f"Message received '{transmit_data}'"}
 
+        return {"Result": f"Message '{message}' delivered"}
 
     return application
 
