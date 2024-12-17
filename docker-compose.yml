@@ -6,7 +6,6 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
-
   kafka1:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -23,7 +22,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 4
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL_LISTENER
-
   kafka2:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -40,7 +38,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 4
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL_LISTENER
-
   kafka3:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -57,7 +54,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 4
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL_LISTENER
-
   kafka4:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -74,4 +70,23 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 4
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL_LISTENER
+  fastapi:
+    build:
+      dockerfile: ./fastapi/Dockerfile
+    depends_on:
+      zookeeper:
+        condition: service_started
+      kafka1:
+        condition: service_started
+      kafka2:
+        condition: service_started
+      kafka3:
+        condition: service_started
+      kafka4:
+        condition: service_started
+
+    networks:
+      - dockerized_network
+    hostname: backend
+
 
