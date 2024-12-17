@@ -6,3 +6,10 @@
 Для сборки в докере - представлен докер файл. Сборка стандартным методом.
 
 В составе проекта также есть docker compose с самой кафкой - для удобства.
+
+upd:
+всё стартует с помощью docker compose
+после старта нужно скормить команду - создаст топик
+```docker exec -it ipr2_kafka_fastapi_jmeter-kafka1-1 kafka-topics --create --topic test1 --bootstrap-server kafka1:9090 --replication-factor 1 --partitions 1```
+еще команда: для листинка сообщений по топику реал тайм:
+```docker exec -it ipr2_kafka_fastapi_jmeter-kafka1-1 kafka-console-consumer --bootstrap-server kafka1:9090 --topic test1 --from-beginning```

@@ -89,12 +89,12 @@ def make_fastapi_application(broker_socket, broker_timeout, topic_name) -> FastA
         sleep(float(broker_timeout))
         message_from_kafka = consumer.poll(timeout=1.5)
 
-        # noinspection PyArgumentList
         if message_from_kafka is None:
             logging.info('Kafka internal error: broker down or topic not valid or no new messages in topic')
             raise HTTPException(status_code=500,
                                 detail='Kafka internal error: broker down OR topic not valid OR no new messages in topic')
         else:
+            # оставь это и не трогай. так и должно быть. ниже ругается на пустой пэйлоад - и пофиг!
             transmit_data = message_from_kafka.value()
             logging.info(f'Message fetched:{transmit_data}')
             return {"Result": f"Message received '{transmit_data}'"}
